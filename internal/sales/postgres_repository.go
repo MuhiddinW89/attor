@@ -3,6 +3,7 @@ package sales
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -55,4 +56,36 @@ func (r *PostgresRepository) Create (
 	)
 
 	return err
+}
+
+func (r *PostgresRepository) GetByID(
+	ctx context.Context,
+	id uuid.UUID,
+) (*Sale, error) {
+	const query = `
+		SELECT 
+			id,
+			client_id,
+			perfume_name,
+			volume_ml,
+			price,
+			comment,
+			sale_date,
+			created_at,
+			updated_at
+		FROM sales
+		WHERE id = $1	
+	`
+
+	var sale Sale
+
+	err := r.db.QueryRow(
+		ctx,
+		query,
+		id,
+	).Scan(
+		&sale.ClientID
+	)
+
+	return &sale, nil
 }
