@@ -2,8 +2,10 @@ package sales
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -14,16 +16,15 @@ type PostgresRepository struct {
 func NewPostgresRepository(
 	db *pgxpool.Pool,
 ) *PostgresRepository {
-	return &PostgresRepository {
-		db:db,
+	return &PostgresRepository{
+		db: db,
 	}
 }
 
-
-func (r *PostgresRepository) Create (
+func (r *PostgresRepository) Create(
 	ctx context.Context,
 	sale *Sale,
-)error {
+) error {
 	const query = `
 		INSERT INTO sales (
 		id,
@@ -84,8 +85,84 @@ func (r *PostgresRepository) GetByID(
 		query,
 		id,
 	).Scan(
-		&sale.ClientID
+		&sale.ID,
+		&sale.ClientID,
+		&sale.PerfumeName,
+		&sale.VolumeML,
+		&sale.Price,
+		&sale.Comment,
+		&sale.SaleDate,
+		&sale.CreatedAt,
+		&sale.UpdatedAt,
 	)
 
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrSaleNotFound
+		}
+		return nil, err
+	}
+
 	return &sale, nil
+}
+
+
+func (r *PostgresRepository) ListByClientID(
+	ctx context.Context,
+	clientID uuid.UUID,
+) ([]*Sale, error) {
+	const query = `
+		SELECT 
+			id,
+			client_id,
+			perfume_name,
+			volume_ml,
+			price,
+			comment,
+			sale_date,
+			created_at,
+			updated_at
+		FROM sales
+		WHERE client_id = $1
+		ORDER BY sale_date DESC;	
+	`	
+	rows, err := r.db.Query(
+		ctx,
+		query,
+		clientID,
+	)
+
+	if err != nil{
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var sales []*Sale
+
+	for rows.Next() {
+		var sale Sale
+
+		err := rows.Scan(
+			&sale.ID,
+			&sale.ClientID,
+			&sale.PerfumeName,
+			&sale.VolumeML,
+			&sale.Price,
+			&sale.Comment,
+			&sale.SaleDate,
+			&sale.CreatedAt,
+			&sale.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		sales = append(sales, &sale)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return sales, nil
 }
