@@ -2,16 +2,15 @@ package reminders
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 )
 
-type Service interface {
+type Repository interface {
 	Create(
 		ctx context.Context,
-		input CreateReminderInput,
-	) (*Reminder, error)
+		reminder *Reminder,
+	) error
 
 	ListPending(
 		ctx context.Context,
@@ -21,10 +20,4 @@ type Service interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) error
-}
-
-type CreateReminderInput struct {
-	ClientID   uuid.UUID
-	SaleID     uuid.UUID
-	ReminderAt time.Time
 }

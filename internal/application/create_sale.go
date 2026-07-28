@@ -7,19 +7,19 @@ import (
 )
 
 type CreateSaleUseCase struct {
-	clientsService clients.Service
-	salesService sales.Service
+	clientsService   clients.Service
+	salesService     sales.Service
 	remindersService reminders.Service
 }
 
-func NewCreateSaleUseCase (
+func NewCreateSaleUseCase(
 	clientsService clients.Service,
 	salesService sales.Service,
 	remindersService reminders.Service,
 ) *CreateSaleUseCase {
 	return &CreateSaleUseCase{
-		clientsService: clientsService,
-		salesService:  salesService,
+		clientsService:   clientsService,
+		salesService:     salesService,
 		remindersService: remindersService,
 	}
 }

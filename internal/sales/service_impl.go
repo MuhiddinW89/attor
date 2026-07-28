@@ -21,12 +21,12 @@ func NewService(
 
 // GetByID implements [Service].
 func (s *service) GetByID(ctx context.Context, id uuid.UUID) (*Sale, error) {
-	panic("unimplemented")
+	return s.repository.GetByID(ctx, id)
 }
 
 // ListByClientID implements [Service].
 func (s *service) ListByClientID(ctx context.Context, clientID uuid.UUID) ([]*Sale, error) {
-	panic("unimplemented")
+	return s.repository.ListByClientID(ctx, clientID)
 }
 
 // Create implements [Service].
@@ -60,5 +60,4 @@ func (s *service) Create(ctx context.Context, input CreateSaleInput) (*Sale, err
 	}
 
 	return sale, nil
-}
-
+}		
