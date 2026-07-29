@@ -1,29 +1,25 @@
-package clients
+package http
 
 import (
 	"errors"
 
+	"github.com/MuhiddinW89/attor/internal/clients"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
 type Handler struct {
-	service Service
+	service clients.Service
 }
 
-func NewHandler(
-	service Service,
-) *Handler {
+func NewHandler(service clients.Service) *Handler {
 	return &Handler{
 		service: service,
 	}
 }
 
-func (h *Handler) Create(
-	c *fiber.Ctx,
-) error {
-
-	var req CreateClientRequest
+func (h *Handler) Create(c *fiber.Ctx) error {
+	var req clients.CreateClientRequest
 
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(
@@ -35,7 +31,7 @@ func (h *Handler) Create(
 
 	client, err := h.service.Create(
 		c.Context(),
-		CreateClientInput{
+		clients.CreateClientInput{
 			FullName:  req.FullName,
 			Phone:     req.Phone,
 			Instagram: req.Instagram,
@@ -44,7 +40,7 @@ func (h *Handler) Create(
 
 	if err != nil {
 
-		if errors.Is(err, ErrClientAlreadyExists) {
+		if errors.Is(err, clients.ErrClientAlreadyExists) {
 			return c.Status(fiber.StatusConflict).JSON(
 				fiber.Map{
 					"error": err.Error(),
@@ -60,7 +56,7 @@ func (h *Handler) Create(
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(
-		ClientResponse{
+		clients.ClientResponse{
 			ID:        client.ID.String(),
 			FullName:  client.FullName,
 			Phone:     client.Phone,
@@ -69,13 +65,9 @@ func (h *Handler) Create(
 	)
 }
 
-func (h *Handler) List(
-	c *fiber.Ctx,
-) error {
+func (h *Handler) List(c *fiber.Ctx) error {
 
-	clients, err := h.service.List(
-		c.Context(),
-	)
+	clientList, err := h.service.List(c.Context())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{
@@ -85,16 +77,15 @@ func (h *Handler) List(
 	}
 
 	response := make(
-		[]ClientListItem,
+		[]clients.ClientListItem,
 		0,
-		len(clients),
+		len(clientList),
 	)
 
-	for _, client := range clients {
-
+	for _, client := range clientList {
 		response = append(
 			response,
-			ClientListItem{
+			clients.ClientListItem{
 				ID:       client.ID.String(),
 				FullName: client.FullName,
 				Phone:    client.Phone,
@@ -105,9 +96,7 @@ func (h *Handler) List(
 	return c.JSON(response)
 }
 
-func (h *Handler) GetByID(
-	c *fiber.Ctx,
-) error {
+func (h *Handler) GetByID(c *fiber.Ctx) error {
 
 	idParam := c.Params("id")
 
@@ -127,7 +116,7 @@ func (h *Handler) GetByID(
 
 	if err != nil {
 
-		if errors.Is(err, ErrClientNotFound) {
+		if errors.Is(err, clients.ErrClientNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(
 				fiber.Map{
 					"error": err.Error(),
@@ -150,7 +139,7 @@ func (h *Handler) GetByID(
 	}
 
 	return c.JSON(
-		ClientDetailsResponse{
+		clients.ClientDetailsResponse{
 			ID:        client.ID.String(),
 			FullName:  client.FullName,
 			Phone:     client.Phone,

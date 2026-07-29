@@ -9,7 +9,8 @@ import (
 type Service interface {
 	Create(ctx context.Context, input CreateClientInput) (*Client, error)
 	List(ctx context.Context) ([]*Client, error)
-	GetByID(ctx context.Context, id uuid.UUID ) (*Client, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*Client, error)
+	GetByPhone(ctx context.Context, phone string) (*Client, error)
 }
 
 type CreateClientInput struct {

@@ -58,10 +58,9 @@ func (s *clientService) Create(
 	return client, nil
 }
 
-
 func (s *clientService) List(
 	ctx context.Context,
-	)([]*Client, error){
+) ([]*Client, error) {
 	return s.repo.List(ctx)
 }
 
@@ -74,4 +73,11 @@ func (s *clientService) GetByID(
 		ctx,
 		id,
 	)
+}
+
+func (s *clientService) GetByPhone(
+	ctx context.Context,
+	phone string,
+) (*Client, error) {
+	return s.repo.GetByPhone(ctx, phone)
 }
