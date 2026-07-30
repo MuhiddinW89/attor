@@ -1,27 +1,37 @@
 package main
 
 import (
+	"log"
+
 	"github.com/MuhiddinW89/attor/internal/clients"
+	transport "github.com/MuhiddinW89/attor/internal/transport/http"
 	"github.com/MuhiddinW89/attor/pkg/config"
 	"github.com/MuhiddinW89/attor/pkg/database"
 	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
-
+	// Load configuration
 	cfg := config.Load()
 
+	// Connect to PostgreSQL
 	db, err := database.NewPostgres(cfg)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
-	repo := clients.NewPostgresRepository(db)
+	// =========================
+	// Clients
+	// =========================
 
-	service := clients.NewService(repo)
+	clientRepo := clients.NewPostgresRepository(db)
+	clientService := clients.NewService(clientRepo)
+	clientHandler := transport.NewClientHandler(clientService)
 
-	handler := clients.NewHandler(service)
+	// =========================
+	// HTTP Server
+	// =========================
 
 	app := fiber.New()
 
@@ -29,25 +39,11 @@ func main() {
 		return c.SendString("Attor API is running")
 	})
 
-	api := app.Group("/api")
-	v1 := api.Group("/v1")
+	transport.RegisterRoutes(app, clientHandler)
 
-	v1.Post(
-		"/clients",
-		handler.Create,
-	)
-
-	v1.Get(
-		"/clients",
-		handler.List,
-	)
-
-	v1.Get(
-		"/clients/:id",
-		handler.GetByID,
-	)
+	log.Println("Server started on :8080")
 
 	if err := app.Listen(":8080"); err != nil {
-		panic(err)
+		log.Fatalf("failed to start server: %v", err)
 	}
 }

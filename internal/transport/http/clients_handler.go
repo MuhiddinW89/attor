@@ -1,4 +1,4 @@
-package http
+package transport
 
 import (
 	"errors"
@@ -8,17 +8,17 @@ import (
 	"github.com/google/uuid"
 )
 
-type Handler struct {
+type ClientHandler struct {
 	service clients.Service
 }
 
-func NewHandler(service clients.Service) *Handler {
-	return &Handler{
+func NewClientHandler(service clients.Service) *ClientHandler {
+	return &ClientHandler{
 		service: service,
 	}
 }
 
-func (h *Handler) Create(c *fiber.Ctx) error {
+func (h *ClientHandler) Create(c *fiber.Ctx) error {
 	var req clients.CreateClientRequest
 
 	if err := c.BodyParser(&req); err != nil {
@@ -65,7 +65,7 @@ func (h *Handler) Create(c *fiber.Ctx) error {
 	)
 }
 
-func (h *Handler) List(c *fiber.Ctx) error {
+func (h *ClientHandler) List(c *fiber.Ctx) error {
 
 	clientList, err := h.service.List(c.Context())
 	if err != nil {
@@ -96,7 +96,7 @@ func (h *Handler) List(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-func (h *Handler) GetByID(c *fiber.Ctx) error {
+func (h *ClientHandler) GetByID(c *fiber.Ctx) error {
 
 	idParam := c.Params("id")
 
