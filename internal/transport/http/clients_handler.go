@@ -3,18 +3,25 @@ package transport
 import (
 	"errors"
 
+	"github.com/MuhiddinW89/attor/internal/application"
 	"github.com/MuhiddinW89/attor/internal/clients"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
 
 type ClientHandler struct {
-	service clients.Service
+	service        clients.Service
+	historyUseCase *application.ClientHistoryUseCase
 }
 
-func NewClientHandler(service clients.Service) *ClientHandler {
+func NewClientHandler(
+	service clients.Service,
+	historyUseCase *application.ClientHistoryUseCase,
+) *ClientHandler {
+
 	return &ClientHandler{
-		service: service,
+		service:        service,
+		historyUseCase: historyUseCase,
 	}
 }
 
@@ -147,4 +154,30 @@ func (h *ClientHandler) GetByID(c *fiber.Ctx) error {
 			BirthDate: birthDate,
 		},
 	)
+}
+
+func (h *ClientHandler) History(c *fiber.Ctx) error {
+
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			fiber.Map{
+				"error": "invalid client id",
+			},
+		)
+	}
+
+	history, err := h.historyUseCase.Execute(
+		c.Context(),
+		id,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
+	}
+
+	return c.JSON(history)
 }

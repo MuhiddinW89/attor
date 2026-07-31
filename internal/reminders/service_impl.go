@@ -29,7 +29,7 @@ func (s *service) Create(
 		ClientID:    input.ClientID,
 		SaleID:      input.SaleID,
 		ReminderAt:  input.ReminderAt,
-		IsCompleted: false,
+		IsSent: 	 false,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -52,4 +52,15 @@ func (s *service) MarkCompleted(
 	id uuid.UUID,
 ) error {
 	return s.repository.MarkCompleted(ctx, id)
+}
+
+func (s *service) GetNearestByClientID(
+	ctx context.Context,
+	clientID uuid.UUID,
+) (*Reminder, error) {
+
+	return s.repository.GetNearestByClientID(
+		ctx,
+		clientID,
+	)
 }

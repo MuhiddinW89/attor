@@ -2,8 +2,10 @@ package reminders
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -28,7 +30,7 @@ func (r *PostgresRepository) Create(
 			client_id,
 			sale_id,
 			reminder_at,
-			is_completed,
+			is_sent,
 			created_at,
 			updated_at
 		)
@@ -42,7 +44,7 @@ func (r *PostgresRepository) Create(
 		reminder.ClientID,
 		reminder.SaleID,
 		reminder.ReminderAt,
-		reminder.IsCompleted,
+		reminder.IsSent,
 		reminder.CreatedAt,
 		reminder.UpdatedAt,
 	)
@@ -60,11 +62,11 @@ func (r *PostgresRepository) ListPending(
 			client_id,
 			sale_id,
 			reminder_at,
-			is_completed,
+			is_sent,
 			created_at,
 			updated_at
 		FROM reminders
-		WHERE is_completed = false
+		WHERE is_sent = false
 		ORDER BY reminder_at ASC
 	`
 
@@ -84,7 +86,7 @@ func (r *PostgresRepository) ListPending(
 			&reminder.ClientID,
 			&reminder.SaleID,
 			&reminder.ReminderAt,
-			&reminder.IsCompleted,
+			&reminder.IsSent,
 			&reminder.CreatedAt,
 			&reminder.UpdatedAt,
 		)
@@ -110,7 +112,7 @@ func (r *PostgresRepository) MarkCompleted(
 	const query = `
 		UPDATE reminders
 		SET
-			is_completed = true,
+			is_sent = true,
 			updated_at = NOW()
 		WHERE id = $1
 	`
@@ -122,4 +124,48 @@ func (r *PostgresRepository) MarkCompleted(
 	)
 
 	return err
+}
+
+func (r *PostgresRepository) GetNearestByClientID(
+	ctx context.Context,
+	clientID uuid.UUID,
+) (*Reminder, error) {
+
+	query := `
+		SELECT
+			id,
+			client_id,
+			sale_id,
+			reminder_at,
+			is_sent,
+			created_at,
+			updated_at
+		FROM reminders
+		WHERE client_id = $1
+		ORDER BY reminder_at
+		LIMIT 1
+	`
+
+	var reminder Reminder
+
+	err := r.db.QueryRow(ctx, query, clientID).Scan(
+		&reminder.ID,
+		&reminder.ClientID,
+		&reminder.SaleID,
+		&reminder.ReminderAt,
+		&reminder.IsSent,
+		&reminder.CreatedAt,
+		&reminder.UpdatedAt,
+	)
+
+	if err != nil {
+
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrReminderNotFound
+		}
+
+		return nil, err
+	}
+
+	return &reminder, nil
 }

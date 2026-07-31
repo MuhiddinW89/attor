@@ -21,6 +21,11 @@ type Service interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) error
+
+	GetNearestByClientID(
+		ctx context.Context,
+		clientID uuid.UUID,
+	) (*Reminder, error)
 }
 
 type CreateReminderInput struct {

@@ -20,4 +20,9 @@ type Repository interface {
 		ctx context.Context,
 		id uuid.UUID,
 	) error
+
+	GetNearestByClientID(
+		ctx context.Context,
+		clientID uuid.UUID,
+	) (*Reminder, error)
 }

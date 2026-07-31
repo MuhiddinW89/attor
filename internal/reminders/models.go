@@ -11,7 +11,7 @@ type Reminder struct {
 	ClientID    uuid.UUID
 	SaleID      uuid.UUID
 	ReminderAt  time.Time
-	IsCompleted bool
+	IsSent	    bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
