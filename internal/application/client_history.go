@@ -30,9 +30,11 @@ func NewClientHistoryUseCase(
 }
 
 type ClientHistory struct {
-	Client   ClientInfo    `json:"client"`
-	Sales    []SaleInfo    `json:"sales"`
-	Reminder *ReminderInfo `json:"reminder,omitempty"`
+	Client      ClientInfo    `json:"client"`
+	TotalSales  int           `json:"total_sales"`
+	TotalAmount float64       `json:"total_amount"`
+	Sales       []SaleInfo    `json:"sales"`
+	Reminder    *ReminderInfo `json:"reminder,omitempty"`
 }
 
 type ClientInfo struct {
@@ -43,10 +45,11 @@ type ClientInfo struct {
 }
 
 type SaleInfo struct {
-	ID          string    `json:"id"`
-	PerfumeName string    `json:"perfume_name"`
-	VolumeML    int       `json:"volume_ml"`
-	Price       float64   `json:"price"`
+	ID          string  `json:"id"`
+	PerfumeName string  `json:"perfume_name"`
+	VolumeML    int     `json:"volume_ml"`
+	Price       float64 `json:"price"`
+	Comment     string  `json:"comment"`
 	SaleDate    string  `json:"sale_date"`
 }
 
@@ -86,7 +89,13 @@ func (uc *ClientHistoryUseCase) Execute(
 		Sales: make([]SaleInfo, 0, len(salesList)),
 	}
 
+	result.TotalSales = len(salesList)
+
+	var totalAmount float64
+
 	for _, sale := range salesList {
+
+		totalAmount += sale.Price
 
 		result.Sales = append(
 			result.Sales,
@@ -95,10 +104,13 @@ func (uc *ClientHistoryUseCase) Execute(
 				PerfumeName: sale.PerfumeName,
 				VolumeML:    sale.VolumeML,
 				Price:       sale.Price,
+				Comment:     *sale.Comment,
 				SaleDate:    sale.SaleDate.Format(time.RFC3339),
 			},
 		)
 	}
+
+	result.TotalAmount = totalAmount
 
 	if reminder != nil {
 		result.Reminder = &ReminderInfo{

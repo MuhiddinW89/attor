@@ -44,20 +44,20 @@ func (s *service) Create(ctx context.Context, input CreateSaleInput) (*Sale, err
 	}
 
 	sale := &Sale{
-		ID:	uuid.New(),
-		ClientID:	input.ClientID,
+		ID:          uuid.New(),
+		ClientID:    input.ClientID,
 		PerfumeName: input.PerfumeName,
-		VolumeML:	input.VolumeML,
-		Price:	input.Price,
-		Comment:	input.Comment,
-		SaleDate:	input.SaleDate,
-		CreatedAt:	time.Now(),
-		UpdatedAt:	time.Now(),
+		VolumeML:    input.VolumeML,
+		Price:       input.Price,
+		Comment:     input.Comment,
+		SaleDate:    input.SaleDate,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 
-	if err := s.repository.Create(ctx, sale); err !=nil {
+	if err := s.repository.Create(ctx, sale); err != nil {
 		return nil, err
 	}
 
 	return sale, nil
-}		
+}
