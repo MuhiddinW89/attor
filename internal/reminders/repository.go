@@ -16,13 +16,17 @@ type Repository interface {
 		ctx context.Context,
 	) ([]*Reminder, error)
 
-	MarkCompleted(
-		ctx context.Context,
-		id uuid.UUID,
-	) error
-
 	GetNearestByClientID(
 		ctx context.Context,
 		clientID uuid.UUID,
 	) (*Reminder, error)
+
+	MarkSent(
+		ctx context.Context,
+		id uuid.UUID,
+	) error
+
+	ListPendingDetailed(
+		ctx context.Context,
+	) ([]*ReminderListItem, error)
 }

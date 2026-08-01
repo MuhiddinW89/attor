@@ -6,6 +6,7 @@ func RegisterRoutes(
 	app *fiber.App,
 	clientHandler *ClientHandler,
 	saleHandler *SaleHandler,
+	reminderHandler *ReminderHandler,
 ) {
 
 	api := app.Group("/api")
@@ -24,5 +25,10 @@ func RegisterRoutes(
 	v1.Get(
 		"/clients/:id/history",
 		clientHandler.History,
+	)
+
+	v1.Patch(
+		"/reminders/:id/sent",
+		reminderHandler.MarkSent,
 	)
 }

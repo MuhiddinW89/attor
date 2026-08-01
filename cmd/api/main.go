@@ -63,6 +63,10 @@ func main() {
 		reminderService,
 	)
 
+	markReminderSentUC := application.NewMarkReminderSentUseCase(
+		reminderService,
+	)
+
 	// =========================
 	// Handlers
 	// =========================
@@ -76,6 +80,9 @@ func main() {
 		createSaleUC,
 	)
 
+	reminderHandler := transport.NewReminderHandler(
+		markReminderSentUC,
+	)
 	// =========================
 	// Fiber
 	// =========================
@@ -90,6 +97,7 @@ func main() {
 		app,
 		clientHandler,
 		saleHandler,
+		reminderHandler,
 	)
 
 	log.Println("Server started on :8080")

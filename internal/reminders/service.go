@@ -17,7 +17,7 @@ type Service interface {
 		ctx context.Context,
 	) ([]*Reminder, error)
 
-	MarkCompleted(
+	MarkSent(
 		ctx context.Context,
 		id uuid.UUID,
 	) error
@@ -26,6 +26,10 @@ type Service interface {
 		ctx context.Context,
 		clientID uuid.UUID,
 	) (*Reminder, error)
+
+	ListPendingDetailed(
+		ctx context.Context,
+	) ([]*ReminderListItem, error)
 }
 
 type CreateReminderInput struct {

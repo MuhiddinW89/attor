@@ -104,28 +104,6 @@ func (r *PostgresRepository) ListPending(
 	return reminders, nil
 }
 
-func (r *PostgresRepository) MarkCompleted(
-	ctx context.Context,
-	id uuid.UUID,
-) error {
-
-	const query = `
-		UPDATE reminders
-		SET
-			is_sent = true,
-			updated_at = NOW()
-		WHERE id = $1
-	`
-
-	_, err := r.db.Exec(
-		ctx,
-		query,
-		id,
-	)
-
-	return err
-}
-
 func (r *PostgresRepository) GetNearestByClientID(
 	ctx context.Context,
 	clientID uuid.UUID,
@@ -168,4 +146,92 @@ func (r *PostgresRepository) GetNearestByClientID(
 	}
 
 	return &reminder, nil
+}
+
+func (r *PostgresRepository) MarkSent(
+	ctx context.Context,
+	id uuid.UUID,
+) error {
+
+	const query = `
+		UPDATE reminders
+		SET
+			is_sent = true,
+			updated_at = NOW()
+		WHERE id = $1
+	`
+
+	commandTag, err := r.db.Exec(
+		ctx,
+		query,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return ErrReminderNotFound
+	}
+
+	return nil
+}
+
+func (r *PostgresRepository) ListPendingDetailed(
+	ctx context.Context,
+) ([]*ReminderListItem, error) {
+
+	const query = `
+		SELECT
+			r.id,
+			r.client_id,
+			c.full_name,
+			c.phone,
+			s.perfume_name,
+			s.volume_ml,
+			s.comment,
+			r.reminder_at
+		FROM reminders r
+		INNER JOIN clients c
+			ON c.id = r.client_id
+		INNER JOIN sales s
+			ON s.id = r.sale_id
+		WHERE r.is_sent = false
+		ORDER BY r.reminder_at ASC
+	`
+
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var reminders []*ReminderListItem
+
+	for rows.Next() {
+
+		var item ReminderListItem
+
+		err := rows.Scan(
+			&item.ID,
+			&item.ClientID,
+			&item.ClientName,
+			&item.Phone,
+			&item.PerfumeName,
+			&item.VolumeML,
+			&item.Comment,
+			&item.ReminderAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		reminders = append(reminders, &item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return reminders, nil
 }
