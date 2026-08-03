@@ -49,7 +49,7 @@ type SaleInfo struct {
 	PerfumeName string  `json:"perfume_name"`
 	VolumeML    int     `json:"volume_ml"`
 	Price       float64 `json:"price"`
-	Comment     string  `json:"comment"`
+	Comment     *string `json:"comment"`
 	SaleDate    string  `json:"sale_date"`
 }
 
@@ -104,7 +104,7 @@ func (uc *ClientHistoryUseCase) Execute(
 				PerfumeName: sale.PerfumeName,
 				VolumeML:    sale.VolumeML,
 				Price:       sale.Price,
-				Comment:     *sale.Comment,
+				Comment:     sale.Comment,
 				SaleDate:    sale.SaleDate.Format(time.RFC3339),
 			},
 		)

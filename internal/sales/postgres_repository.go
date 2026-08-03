@@ -2,6 +2,7 @@ package sales
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/google/uuid"
@@ -25,17 +26,18 @@ func (r *PostgresRepository) Create(
 	ctx context.Context,
 	sale *Sale,
 ) error {
+
 	const query = `
 		INSERT INTO sales (
-		id,
-		client_id,
-		perfume_name,
-		volume_ml,
-		price,
-		comment,
-		sale_date,
-		created_at,
-		updated_at
+			id,
+			client_id,
+			perfume_name,
+			volume_ml,
+			price,
+			comment,
+			sale_date,
+			created_at,
+			updated_at
 		)
 		VALUES (
 			$1,$2,$3,$4,$5,$6,$7,$8,$9
@@ -63,8 +65,9 @@ func (r *PostgresRepository) GetByID(
 	ctx context.Context,
 	id uuid.UUID,
 ) (*Sale, error) {
+
 	const query = `
-		SELECT 
+		SELECT
 			id,
 			client_id,
 			perfume_name,
@@ -75,10 +78,11 @@ func (r *PostgresRepository) GetByID(
 			created_at,
 			updated_at
 		FROM sales
-		WHERE id = $1	
+		WHERE id = $1
 	`
 
 	var sale Sale
+	var comment sql.NullString
 
 	err := r.db.QueryRow(
 		ctx,
@@ -90,7 +94,7 @@ func (r *PostgresRepository) GetByID(
 		&sale.PerfumeName,
 		&sale.VolumeML,
 		&sale.Price,
-		&sale.Comment,
+		&comment,
 		&sale.SaleDate,
 		&sale.CreatedAt,
 		&sale.UpdatedAt,
@@ -103,16 +107,20 @@ func (r *PostgresRepository) GetByID(
 		return nil, err
 	}
 
+	if comment.Valid {
+		sale.Comment = &comment.String
+	}
+
 	return &sale, nil
 }
-
 
 func (r *PostgresRepository) ListByClientID(
 	ctx context.Context,
 	clientID uuid.UUID,
 ) ([]*Sale, error) {
+
 	const query = `
-		SELECT 
+		SELECT
 			id,
 			client_id,
 			perfume_name,
@@ -124,24 +132,25 @@ func (r *PostgresRepository) ListByClientID(
 			updated_at
 		FROM sales
 		WHERE client_id = $1
-		ORDER BY sale_date DESC;	
-	`	
+		ORDER BY sale_date DESC
+	`
+
 	rows, err := r.db.Query(
 		ctx,
 		query,
 		clientID,
 	)
-
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	var sales []*Sale
 
 	for rows.Next() {
+
 		var sale Sale
+		var comment sql.NullString
 
 		err := rows.Scan(
 			&sale.ID,
@@ -149,7 +158,7 @@ func (r *PostgresRepository) ListByClientID(
 			&sale.PerfumeName,
 			&sale.VolumeML,
 			&sale.Price,
-			&sale.Comment,
+			&comment,
 			&sale.SaleDate,
 			&sale.CreatedAt,
 			&sale.UpdatedAt,
@@ -157,6 +166,11 @@ func (r *PostgresRepository) ListByClientID(
 		if err != nil {
 			return nil, err
 		}
+
+		if comment.Valid {
+			sale.Comment = &comment.String
+		}
+
 		sales = append(sales, &sale)
 	}
 

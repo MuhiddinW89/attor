@@ -189,7 +189,7 @@ func (r *PostgresRepository) ListPendingDetailed(
 			c.phone,
 			s.perfume_name,
 			s.volume_ml,
-			s.comment,
+			COALESCE(s.comment, '') AS comment,
 			r.reminder_at
 		FROM reminders r
 		INNER JOIN clients c
