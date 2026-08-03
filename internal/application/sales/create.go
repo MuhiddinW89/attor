@@ -1,4 +1,4 @@
-package application
+package sales
 
 import (
 	"context"

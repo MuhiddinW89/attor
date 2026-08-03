@@ -3,16 +3,16 @@ package transport
 import (
 	"time"
 
-	"github.com/MuhiddinW89/attor/internal/application"
+	saleapp "github.com/MuhiddinW89/attor/internal/application/sales"
 	"github.com/gofiber/fiber/v2"
 )
 
 type SaleHandler struct {
-	useCase *application.CreateSaleUseCase
+	useCase *saleapp.CreateSaleUseCase
 }
 
 func NewSaleHandler(
-	useCase *application.CreateSaleUseCase,
+	useCase *saleapp.CreateSaleUseCase,
 ) *SaleHandler {
 	return &SaleHandler{
 		useCase: useCase,
@@ -33,7 +33,7 @@ func (h *SaleHandler) Create(c *fiber.Ctx) error {
 
 	sale, err := h.useCase.Execute(
 		c.Context(),
-		application.CreateSaleRequest{
+		saleapp.CreateSaleRequest{
 			Phone:       req.Phone,
 			FullName:    req.FullName,
 			PerfumeName: req.PerfumeName,

@@ -3,7 +3,7 @@ package transport
 import (
 	"errors"
 
-	"github.com/MuhiddinW89/attor/internal/application"
+	clientapp "github.com/MuhiddinW89/attor/internal/application/clients"
 	"github.com/MuhiddinW89/attor/internal/clients"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -11,12 +11,12 @@ import (
 
 type ClientHandler struct {
 	service        clients.Service
-	historyUseCase *application.ClientHistoryUseCase
+	historyUseCase *clientapp.ClientHistoryUseCase
 }
 
 func NewClientHandler(
 	service clients.Service,
-	historyUseCase *application.ClientHistoryUseCase,
+	historyUseCase *clientapp.ClientHistoryUseCase,
 ) *ClientHandler {
 
 	return &ClientHandler{

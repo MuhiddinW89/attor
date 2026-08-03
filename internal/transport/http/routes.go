@@ -31,4 +31,9 @@ func RegisterRoutes(
 		"/reminders/:id/sent",
 		reminderHandler.MarkSent,
 	)
+
+	v1.Get(
+		"/reminders",
+		reminderHandler.List,
+	)
 }
