@@ -60,8 +60,10 @@ func (s *clientService) Create(
 
 func (s *clientService) List(
 	ctx context.Context,
+	search string,
 ) ([]*Client, error) {
-	return s.repo.List(ctx)
+
+	return s.repo.List(ctx, search)
 }
 
 func (s *clientService) GetByID(

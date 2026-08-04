@@ -74,7 +74,12 @@ func (h *ClientHandler) Create(c *fiber.Ctx) error {
 
 func (h *ClientHandler) List(c *fiber.Ctx) error {
 
-	clientList, err := h.service.List(c.Context())
+	search := c.Query("search")
+
+	clientList, err := h.service.List(
+		c.Context(),
+		search,
+	)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{

@@ -138,9 +138,12 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id uuid.UUID) (*Client
 	return &client, nil
 }
 
-func (r *PostgresRepository) List(ctx context.Context) ([]*Client, error) {
+func (r *PostgresRepository) List(
+	ctx context.Context,
+	search string,
+) ([]*Client, error) {
 
-	query := `
+	const query = `
 		SELECT
 			id,
 			full_name,
@@ -150,17 +153,21 @@ func (r *PostgresRepository) List(ctx context.Context) ([]*Client, error) {
 			created_at,
 			updated_at
 		FROM clients
-		ORDER BY created_at DESC
+		WHERE
+			$1 = ''
+			OR full_name ILIKE '%' || $1 || '%'
+			OR phone ILIKE '%' || $1 || '%'
+		ORDER BY full_name ASC
 	`
 
 	rows, err := r.db.Query(
 		ctx,
 		query,
+		search,
 	)
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	var clients []*Client
@@ -182,10 +189,7 @@ func (r *PostgresRepository) List(ctx context.Context) ([]*Client, error) {
 			return nil, err
 		}
 
-		clients = append(
-			clients,
-			&client,
-		)
+		clients = append(clients, &client)
 	}
 
 	if err := rows.Err(); err != nil {
