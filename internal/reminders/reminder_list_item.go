@@ -10,5 +10,7 @@ type ReminderListItem struct {
 	PerfumeName string
 	VolumeML    int
 	Comment     string
+	SaleDate    time.Time
 	ReminderAt  time.Time
+	IsSent      bool
 }

@@ -9,6 +9,8 @@ type ReminderListItem struct {
 	Phone       string    `json:"phone"`
 	PerfumeName string    `json:"perfume_name"`
 	VolumeML    int       `json:"volume_ml"`
-	Comment     *string    `json:"comment"`
+	Comment     *string   `json:"comment"`
+	SaleDate    time.Time `json:"sale_date"`
 	ReminderAt  time.Time `json:"reminder_at"`
+	IsSent      bool      `json:"is_sent"`
 }

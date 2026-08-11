@@ -47,6 +47,17 @@ func (s *service) ListPending(
 	return s.repository.ListPending(ctx)
 }
 
+func (s *service) ListDetailed(
+	ctx context.Context,
+	status string,
+) ([]*ReminderListItem, error) {
+
+	return s.repository.ListDetailed(
+		ctx,
+		status,
+	)
+}
+
 func (s *service) GetNearestByClientID(
 	ctx context.Context,
 	clientID uuid.UUID,

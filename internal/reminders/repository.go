@@ -29,4 +29,9 @@ type Repository interface {
 	ListPendingDetailed(
 		ctx context.Context,
 	) ([]*ReminderListItem, error)
+
+	ListDetailed(
+		ctx context.Context,
+		status string,
+	) ([]*ReminderListItem, error)
 }

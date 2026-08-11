@@ -17,6 +17,11 @@ type Service interface {
 		ctx context.Context,
 	) ([]*Reminder, error)
 
+	ListDetailed(
+		ctx context.Context,
+		status string,
+	) ([]*ReminderListItem, error)
+
 	MarkSent(
 		ctx context.Context,
 		id uuid.UUID,

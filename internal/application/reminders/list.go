@@ -2,9 +2,9 @@ package reminders
 
 import (
 	"context"
-)
 
-import domain "github.com/MuhiddinW89/attor/internal/reminders"
+	domain "github.com/MuhiddinW89/attor/internal/reminders"
+)
 
 type ListUseCase struct {
 	reminderService domain.Service
@@ -20,9 +20,13 @@ func NewListUseCase(
 
 func (uc *ListUseCase) Execute(
 	ctx context.Context,
+	status string,
 ) ([]*ReminderListItem, error) {
 
-	items, err := uc.reminderService.ListPendingDetailed(ctx)
+	items, err := uc.reminderService.ListDetailed(
+		ctx,
+		status,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +34,6 @@ func (uc *ListUseCase) Execute(
 	result := make([]*ReminderListItem, 0, len(items))
 
 	for _, item := range items {
-
 		result = append(result, &ReminderListItem{
 			ID:          item.ID,
 			ClientID:    item.ClientID,
@@ -39,7 +42,9 @@ func (uc *ListUseCase) Execute(
 			PerfumeName: item.PerfumeName,
 			VolumeML:    item.VolumeML,
 			Comment:     &item.Comment,
+			SaleDate:    item.SaleDate,
 			ReminderAt:  item.ReminderAt,
+			IsSent: 	 item.IsSent,	
 		})
 	}
 

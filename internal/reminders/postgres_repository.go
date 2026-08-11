@@ -3,6 +3,7 @@ package reminders
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -177,28 +178,118 @@ func (r *PostgresRepository) MarkSent(
 	return nil
 }
 
-func (r *PostgresRepository) ListPendingDetailed(
+// ListDetailed returns reminders filtered by status.
+//
+// Supported statuses:
+//   - all
+//   - urgent
+//   - overdue
+//   - completed
+func (r *PostgresRepository) ListDetailed(
 	ctx context.Context,
+	status string,
 ) ([]*ReminderListItem, error) {
 
-	const query = `
-		SELECT
-			r.id,
-			r.client_id,
-			c.full_name,
-			c.phone,
-			s.perfume_name,
-			s.volume_ml,
-			COALESCE(s.comment, '') AS comment,
-			r.reminder_at
-		FROM reminders r
-		INNER JOIN clients c
-			ON c.id = r.client_id
-		INNER JOIN sales s
-			ON s.id = r.sale_id
-		WHERE r.is_sent = false
-		ORDER BY r.reminder_at ASC
-	`
+	var query string
+
+	switch status {
+	case "all":
+		query = `
+			SELECT
+				r.id,
+				r.client_id,
+				c.full_name,
+				c.phone,
+				s.perfume_name,
+				s.volume_ml,
+				COALESCE(s.comment, '') AS comment,
+				s.sale_date,
+				r.reminder_at,
+				r.is_sent
+			FROM reminders r
+			INNER JOIN clients c
+				ON c.id = r.client_id
+			INNER JOIN sales s
+				ON s.id = r.sale_id
+			ORDER BY
+    		r.is_sent ASC,
+    		r.reminder_at ASC
+		`
+
+	case "urgent":
+		query = `
+			SELECT
+				r.id,
+				r.client_id,
+				c.full_name,
+				c.phone,
+				s.perfume_name,
+				s.volume_ml,
+				COALESCE(s.comment, '') AS comment,
+				s.sale_date,
+				r.reminder_at,
+				r.is_sent
+			FROM reminders r
+			INNER JOIN clients c
+				ON c.id = r.client_id
+			INNER JOIN sales s
+				ON s.id = r.sale_id
+			WHERE
+				r.is_sent = false
+				AND r.reminder_at >= NOW()
+				AND r.reminder_at <= NOW() + INTERVAL '3 days'
+			ORDER BY r.reminder_at ASC
+		`
+
+	case "overdue":
+		query = `
+			SELECT
+				r.id,
+				r.client_id,
+				c.full_name,
+				c.phone,
+				s.perfume_name,
+				s.volume_ml,
+				COALESCE(s.comment, '') AS comment,
+				s.sale_date,
+				r.reminder_at,
+				r.is_sent
+			FROM reminders r
+			INNER JOIN clients c
+				ON c.id = r.client_id
+			INNER JOIN sales s
+				ON s.id = r.sale_id
+			WHERE
+				r.is_sent = false
+				AND r.reminder_at < NOW()
+			ORDER BY r.reminder_at ASC
+		`
+
+	case "completed":
+		query = `
+			SELECT
+				r.id,
+				r.client_id,
+				c.full_name,
+				c.phone,
+				s.perfume_name,
+				s.volume_ml,
+				COALESCE(s.comment, '') AS comment,
+				s.sale_date,
+				r.reminder_at,
+				r.is_sent
+			FROM reminders r
+			INNER JOIN clients c
+				ON c.id = r.client_id
+			INNER JOIN sales s
+				ON s.id = r.sale_id
+			WHERE r.is_sent = true
+			ORDER BY r.updated_at DESC
+		`
+
+	default:
+		return nil, fmt.Errorf("invalid reminder status: %s", status)
+	}
 
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
@@ -209,7 +300,6 @@ func (r *PostgresRepository) ListPendingDetailed(
 	var reminders []*ReminderListItem
 
 	for rows.Next() {
-
 		var item ReminderListItem
 
 		err := rows.Scan(
@@ -220,7 +310,9 @@ func (r *PostgresRepository) ListPendingDetailed(
 			&item.PerfumeName,
 			&item.VolumeML,
 			&item.Comment,
+			&item.SaleDate,
 			&item.ReminderAt,
+			&item.IsSent,
 		)
 		if err != nil {
 			return nil, err
@@ -234,4 +326,11 @@ func (r *PostgresRepository) ListPendingDetailed(
 	}
 
 	return reminders, nil
+}
+
+// ListPendingDetailed is kept for compatibility with the existing service.
+func (r *PostgresRepository) ListPendingDetailed(
+	ctx context.Context,
+) ([]*ReminderListItem, error) {
+	return r.ListDetailed(ctx, "all")
 }
