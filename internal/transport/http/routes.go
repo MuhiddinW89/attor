@@ -16,6 +16,7 @@ func RegisterRoutes(
 
 	v1.Post("/clients", clientHandler.Create)
 	v1.Get("/clients", clientHandler.List)
+	v1.Get("/clients/summary", clientHandler.Summary)
 	v1.Get("/clients/:id", clientHandler.GetByID)
 
 	// Sales

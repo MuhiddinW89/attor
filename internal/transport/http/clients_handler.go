@@ -186,3 +186,42 @@ func (h *ClientHandler) History(c *fiber.Ctx) error {
 
 	return c.JSON(history)
 }
+
+func (h *ClientHandler) Summary(c *fiber.Ctx) error {
+
+	search := c.Query("search")
+
+	clientList, err := h.service.ListWithStats(
+		c.Context(),
+		search,
+	)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(
+			fiber.Map{
+				"error": err.Error(),
+			},
+		)
+	}
+
+	response := make(
+		[]clients.ClientListStatsItem,
+		0,
+		len(clientList),
+	)
+
+	for _, client := range clientList {
+		response = append(
+			response,
+			clients.ClientListStatsItem{
+				ID:          client.ID,
+				FullName:    client.FullName,
+				Phone:       client.Phone,
+				Instagram:   client.Instagram,
+				TotalSales:  client.TotalSales,
+				TotalAmount: client.TotalAmount,
+			},
+		)
+	}
+
+	return c.JSON(response)
+}

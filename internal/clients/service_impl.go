@@ -81,5 +81,20 @@ func (s *clientService) GetByPhone(
 	ctx context.Context,
 	phone string,
 ) (*Client, error) {
-	return s.repo.GetByPhone(ctx, phone)
+
+	return s.repo.GetByPhone(
+		ctx,
+		phone,
+	)
+}
+
+func (s *clientService) ListWithStats(
+	ctx context.Context,
+	search string,
+) ([]*ClientListStatsItem, error) {
+
+	return s.repo.ListWithStats(
+		ctx,
+		search,
+	)
 }
