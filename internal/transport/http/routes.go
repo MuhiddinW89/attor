@@ -7,6 +7,7 @@ func RegisterRoutes(
 	clientHandler *ClientHandler,
 	saleHandler *SaleHandler,
 	reminderHandler *ReminderHandler,
+	analyticsHandler *AnalyticsHandler,
 ) {
 
 	api := app.Group("/api")
@@ -36,5 +37,12 @@ func RegisterRoutes(
 	v1.Get(
 		"/reminders",
 		reminderHandler.List,
+	)
+
+	// Analytics
+
+	v1.Get(
+		"/analytics",
+		analyticsHandler.Get,
 	)
 }

@@ -27,4 +27,4 @@ type CreateClientInput struct {
 	FullName  string
 	Phone     string
 	Instagram *string
-}
+} 

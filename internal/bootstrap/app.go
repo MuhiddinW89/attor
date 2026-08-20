@@ -1,6 +1,8 @@
 package bootstrap
 
 import (
+	"github.com/MuhiddinW89/attor/internal/analytics"
+	analyticsapp "github.com/MuhiddinW89/attor/internal/application/analytics"
 	clientapp "github.com/MuhiddinW89/attor/internal/application/clients"
 	reminderapp "github.com/MuhiddinW89/attor/internal/application/reminders"
 	saleapp "github.com/MuhiddinW89/attor/internal/application/sales"
@@ -38,6 +40,7 @@ func New(
 	clientRepo := clients.NewPostgresRepository(db)
 	saleRepo := sales.NewPostgresRepository(db)
 	reminderRepo := reminders.NewPostgresRepository(db)
+	analyticsRepo := analytics.NewPostgresRepository(db)
 
 	// =========================
 	// Services
@@ -46,6 +49,7 @@ func New(
 	clientService := clients.NewService(clientRepo)
 	saleService := sales.NewService(saleRepo)
 	reminderService := reminders.NewService(reminderRepo)
+	analyticsService := analytics.NewService(analyticsRepo)
 
 	// =========================
 	// Use Cases
@@ -71,6 +75,10 @@ func New(
 		reminderService,
 	)
 
+	getAnalyticsUC := analyticsapp.NewGetAnalyticsUseCase(
+		analyticsService,
+	)
+
 	// =========================
 	// Handlers
 	// =========================
@@ -87,6 +95,10 @@ func New(
 	reminderHandler := transport.NewReminderHandler(
 		markReminderSentUC,
 		listRemindersUC,
+	)
+
+	analyticsHandler := transport.NewAnalyticsHandler(
+		getAnalyticsUC,
 	)
 	// =========================
 	// Fiber
@@ -109,6 +121,7 @@ func New(
 		clientHandler,
 		saleHandler,
 		reminderHandler,
+		analyticsHandler,
 	)
 
 	return app, nil
