@@ -43,6 +43,7 @@ func (s *clientService) Create(
 		FullName:  input.FullName,
 		Phone:     input.Phone,
 		Instagram: input.Instagram,
+		BirthDate: input.BirthDate,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

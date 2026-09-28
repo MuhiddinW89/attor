@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -27,4 +28,5 @@ type CreateClientInput struct {
 	FullName  string
 	Phone     string
 	Instagram *string
-} 
+	BirthDate *time.Time
+}

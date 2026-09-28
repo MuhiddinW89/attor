@@ -19,7 +19,6 @@ func NewSaleHandler(
 	}
 }
 
-
 func (h *SaleHandler) Create(c *fiber.Ctx) error {
 	var req CreateSaleRequest
 
@@ -31,11 +30,27 @@ func (h *SaleHandler) Create(c *fiber.Ctx) error {
 		)
 	}
 
+	var birthDate *time.Time
+
+	if req.Birthday != "" {
+		parsed, err := time.Parse("02.01.2006", req.Birthday)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(
+				fiber.Map{
+					"error": "invalid birthday format, expected DD.MM.YYYY",
+				},
+			)
+		}
+
+		birthDate = &parsed
+	}
+
 	sale, err := h.useCase.Execute(
 		c.Context(),
 		saleapp.CreateSaleRequest{
 			Phone:       req.Phone,
 			FullName:    req.FullName,
+			BirthDate:   birthDate,
 			PerfumeName: req.PerfumeName,
 			VolumeML:    req.VolumeML,
 			Price:       req.Price,

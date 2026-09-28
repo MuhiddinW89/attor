@@ -35,16 +35,17 @@ func (uc *ListUseCase) Execute(
 
 	for _, item := range items {
 		result = append(result, &ReminderListItem{
-			ID:          item.ID,
-			ClientID:    item.ClientID,
+			ID:          item.ID.String(),
+			ClientID:    item.ClientID.String(),
 			ClientName:  item.ClientName,
 			Phone:       item.Phone,
 			PerfumeName: item.PerfumeName,
 			VolumeML:    item.VolumeML,
+			Price:       item.Price,
 			Comment:     &item.Comment,
 			SaleDate:    item.SaleDate,
 			ReminderAt:  item.ReminderAt,
-			IsSent: 	 item.IsSent,	
+			IsSent:      item.IsSent,
 		})
 	}
 

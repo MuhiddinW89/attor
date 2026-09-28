@@ -31,6 +31,7 @@ func NewCreateSaleUseCase(
 type CreateSaleRequest struct {
 	Phone       string
 	FullName    string
+	BirthDate   *time.Time
 	PerfumeName string
 	VolumeML    int
 	Price       float64
@@ -44,13 +45,15 @@ func (uc *CreateSaleUseCase) Execute(
 ) (*sales.Sale, error) {
 
 	client, err := uc.clientService.GetByPhone(ctx, req.Phone)
+
 	if err != nil {
 		if errors.Is(err, clients.ErrClientNotFound) {
 			client, err = uc.clientService.Create(
 				ctx,
 				clients.CreateClientInput{
-					FullName: req.FullName,
-					Phone:    req.Phone,
+					FullName:  req.FullName,
+					Phone:     req.Phone,
+					BirthDate: req.BirthDate,
 				},
 			)
 			if err != nil {
@@ -81,7 +84,11 @@ func (uc *CreateSaleUseCase) Execute(
 		reminders.CreateReminderInput{
 			ClientID:   client.ID,
 			SaleID:     sale.ID,
-			ReminderAt: sale.SaleDate.AddDate(0, 0, reminders.DefaultReminderAfterDays),
+			ReminderAt: sale.SaleDate.AddDate(
+				0,
+				0,
+				reminders.DefaultReminderAfterDays,
+			),
 		},
 	)
 	if err != nil {

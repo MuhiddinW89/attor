@@ -14,7 +14,9 @@ type PostgresRepository struct {
 	db *pgxpool.Pool
 }
 
-func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
+func NewPostgresRepository(
+	db *pgxpool.Pool,
+) *PostgresRepository {
 	return &PostgresRepository{
 		db: db,
 	}
@@ -24,7 +26,6 @@ func (r *PostgresRepository) Create(
 	ctx context.Context,
 	reminder *Reminder,
 ) error {
-
 	const query = `
 		INSERT INTO reminders (
 			id,
@@ -56,7 +57,6 @@ func (r *PostgresRepository) Create(
 func (r *PostgresRepository) ListPending(
 	ctx context.Context,
 ) ([]*Reminder, error) {
-
 	const query = `
 		SELECT
 			id,
@@ -95,7 +95,10 @@ func (r *PostgresRepository) ListPending(
 			return nil, err
 		}
 
-		reminders = append(reminders, &reminder)
+		reminders = append(
+			reminders,
+			&reminder,
+		)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -109,8 +112,7 @@ func (r *PostgresRepository) GetNearestByClientID(
 	ctx context.Context,
 	clientID uuid.UUID,
 ) (*Reminder, error) {
-
-	query := `
+	const query = `
 		SELECT
 			id,
 			client_id,
@@ -127,7 +129,11 @@ func (r *PostgresRepository) GetNearestByClientID(
 
 	var reminder Reminder
 
-	err := r.db.QueryRow(ctx, query, clientID).Scan(
+	err := r.db.QueryRow(
+		ctx,
+		query,
+		clientID,
+	).Scan(
 		&reminder.ID,
 		&reminder.ClientID,
 		&reminder.SaleID,
@@ -138,7 +144,6 @@ func (r *PostgresRepository) GetNearestByClientID(
 	)
 
 	if err != nil {
-
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrReminderNotFound
 		}
@@ -153,7 +158,6 @@ func (r *PostgresRepository) MarkSent(
 	ctx context.Context,
 	id uuid.UUID,
 ) error {
-
 	const query = `
 		UPDATE reminders
 		SET
@@ -189,7 +193,6 @@ func (r *PostgresRepository) ListDetailed(
 	ctx context.Context,
 	status string,
 ) ([]*ReminderListItem, error) {
-
 	var query string
 
 	switch status {
@@ -202,6 +205,7 @@ func (r *PostgresRepository) ListDetailed(
 				c.phone,
 				s.perfume_name,
 				s.volume_ml,
+				s.price,
 				COALESCE(s.comment, '') AS comment,
 				s.sale_date,
 				r.reminder_at,
@@ -212,8 +216,8 @@ func (r *PostgresRepository) ListDetailed(
 			INNER JOIN sales s
 				ON s.id = r.sale_id
 			ORDER BY
-    		r.is_sent ASC,
-    		r.reminder_at ASC
+				r.is_sent ASC,
+				r.reminder_at ASC
 		`
 
 	case "urgent":
@@ -225,6 +229,7 @@ func (r *PostgresRepository) ListDetailed(
 				c.phone,
 				s.perfume_name,
 				s.volume_ml,
+				s.price,
 				COALESCE(s.comment, '') AS comment,
 				s.sale_date,
 				r.reminder_at,
@@ -250,6 +255,7 @@ func (r *PostgresRepository) ListDetailed(
 				c.phone,
 				s.perfume_name,
 				s.volume_ml,
+				s.price,
 				COALESCE(s.comment, '') AS comment,
 				s.sale_date,
 				r.reminder_at,
@@ -274,6 +280,7 @@ func (r *PostgresRepository) ListDetailed(
 				c.phone,
 				s.perfume_name,
 				s.volume_ml,
+				s.price,
 				COALESCE(s.comment, '') AS comment,
 				s.sale_date,
 				r.reminder_at,
@@ -288,7 +295,10 @@ func (r *PostgresRepository) ListDetailed(
 		`
 
 	default:
-		return nil, fmt.Errorf("invalid reminder status: %s", status)
+		return nil, fmt.Errorf(
+			"invalid reminder status: %s",
+			status,
+		)
 	}
 
 	rows, err := r.db.Query(ctx, query)
@@ -309,6 +319,7 @@ func (r *PostgresRepository) ListDetailed(
 			&item.Phone,
 			&item.PerfumeName,
 			&item.VolumeML,
+			&item.Price,
 			&item.Comment,
 			&item.SaleDate,
 			&item.ReminderAt,
@@ -318,7 +329,10 @@ func (r *PostgresRepository) ListDetailed(
 			return nil, err
 		}
 
-		reminders = append(reminders, &item)
+		reminders = append(
+			reminders,
+			&item,
+		)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -328,7 +342,8 @@ func (r *PostgresRepository) ListDetailed(
 	return reminders, nil
 }
 
-// ListPendingDetailed is kept for compatibility with the existing service.
+// ListPendingDetailed is kept for compatibility
+// with the existing service.
 func (r *PostgresRepository) ListPendingDetailed(
 	ctx context.Context,
 ) ([]*ReminderListItem, error) {
