@@ -124,6 +124,10 @@ func New(
 		analyticsHandler,
 	)
 
+	for _, route := range app.GetRoutes() {
+    println(route.Method, route.Path)
+}
+
 	app.Get("/health", func(c *fiber.Ctx) error {
     return c.JSON(fiber.Map{
         "status": "ok",
