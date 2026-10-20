@@ -1,30 +1,50 @@
+
 package database
 
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"time"
 
 	"github.com/MuhiddinW89/attor/pkg/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func NewPostgres(cfg *config.Config) (*pgxpool.Pool, error) {
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBName,
-	)
+	var dsn string
 
-	pool, err := pgxpool.New(context.Background(), dsn)
-	if err != nil {
-		return nil, err
+	if cfg.DBURL != "" {
+		dsn = cfg.DBURL
+	} else {
+		dsn = fmt.Sprintf(
+			"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+			url.QueryEscape(cfg.DBUser),
+			url.QueryEscape(cfg.DBPassword),
+			cfg.DBHost,
+			cfg.DBPort,
+			cfg.DBName,
+		)
 	}
 
-	if err := pool.Ping(context.Background()); err != nil {
-		return nil, err
+	poolConfig, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("parse database config: %w", err)
+	}
+
+	poolConfig.MaxConnLifetime = time.Hour
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
+	if err != nil {
+		return nil, fmt.Errorf("create database pool: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
 	return pool, nil

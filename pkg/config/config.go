@@ -1,3 +1,4 @@
+
 package config
 
 import (
@@ -8,6 +9,7 @@ import (
 )
 
 type Config struct {
+	DBURL      string
 	DBHost     string
 	DBPort     string
 	DBName     string
@@ -16,12 +18,14 @@ type Config struct {
 }
 
 func Load() *Config {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("failed to load .env")
+	// Локальный .env необязателен: на хостинге
+	// переменные окружения задаются через панель.
+	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
+		log.Printf("Warning: could not load .env: %v", err)
 	}
 
 	return &Config{
+		DBURL:      os.Getenv("DB_URL"),
 		DBHost:     os.Getenv("DB_HOST"),
 		DBPort:     os.Getenv("DB_PORT"),
 		DBName:     os.Getenv("DB_NAME"),
