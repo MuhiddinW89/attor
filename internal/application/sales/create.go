@@ -8,6 +8,7 @@ import (
 	"github.com/MuhiddinW89/attor/internal/clients"
 	"github.com/MuhiddinW89/attor/internal/reminders"
 	"github.com/MuhiddinW89/attor/internal/sales"
+	"github.com/google/uuid"
 )
 
 type CreateSaleUseCase struct {
@@ -29,6 +30,7 @@ func NewCreateSaleUseCase(
 }
 
 type CreateSaleRequest struct {
+	ClientID    *uuid.UUID
 	Phone       string
 	FullName    string
 	BirthDate   *time.Time
@@ -44,23 +46,32 @@ func (uc *CreateSaleUseCase) Execute(
 	req CreateSaleRequest,
 ) (*sales.Sale, error) {
 
-	client, err := uc.clientService.GetByPhone(ctx, req.Phone)
+	var client *clients.Client
+	var err error
+	if req.ClientID != nil {
+		client, err = uc.clientService.GetByID(ctx, *req.ClientID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		client, err = uc.clientService.GetByPhone(ctx, req.Phone)
 
-	if err != nil {
-		if errors.Is(err, clients.ErrClientNotFound) {
-			client, err = uc.clientService.Create(
-				ctx,
-				clients.CreateClientInput{
-					FullName:  req.FullName,
-					Phone:     req.Phone,
-					BirthDate: req.BirthDate,
-				},
-			)
-			if err != nil {
+		if err != nil {
+			if errors.Is(err, clients.ErrClientNotFound) {
+				client, err = uc.clientService.Create(
+					ctx,
+					clients.CreateClientInput{
+						FullName:  req.FullName,
+						Phone:     req.Phone,
+						BirthDate: req.BirthDate,
+					},
+				)
+				if err != nil {
+					return nil, err
+				}
+			} else {
 				return nil, err
 			}
-		} else {
-			return nil, err
 		}
 	}
 
@@ -82,8 +93,8 @@ func (uc *CreateSaleUseCase) Execute(
 	_, err = uc.reminderService.Create(
 		ctx,
 		reminders.CreateReminderInput{
-			ClientID:   client.ID,
-			SaleID:     sale.ID,
+			ClientID: client.ID,
+			SaleID:   sale.ID,
 			ReminderAt: sale.SaleDate.AddDate(
 				0,
 				0,

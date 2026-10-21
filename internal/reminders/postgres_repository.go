@@ -5,17 +5,18 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MuhiddinW89/attor/internal/identity"
+	"github.com/MuhiddinW89/attor/pkg/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresRepository struct {
-	db *pgxpool.Pool
+	db database.Querier
 }
 
 func NewPostgresRepository(
-	db *pgxpool.Pool,
+	db database.Querier,
 ) *PostgresRepository {
 	return &PostgresRepository{
 		db: db,
@@ -26,9 +27,17 @@ func (r *PostgresRepository) Create(
 	ctx context.Context,
 	reminder *Reminder,
 ) error {
+	session, ok := identity.SessionFromContext(ctx)
+	if !ok {
+		return identity.ErrInvalidSession
+	}
+	reminder.StoreID = session.StoreID
+	reminder.CreatedByUserID = session.UserID
 	const query = `
 		INSERT INTO reminders (
 			id,
+			store_id,
+			created_by_user_id,
 			client_id,
 			sale_id,
 			reminder_at,
@@ -36,13 +45,15 @@ func (r *PostgresRepository) Create(
 			created_at,
 			updated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	`
 
 	_, err := r.db.Exec(
 		ctx,
 		query,
 		reminder.ID,
+		reminder.StoreID,
+		reminder.CreatedByUserID,
 		reminder.ClientID,
 		reminder.SaleID,
 		reminder.ReminderAt,
@@ -57,6 +68,10 @@ func (r *PostgresRepository) Create(
 func (r *PostgresRepository) ListPending(
 	ctx context.Context,
 ) ([]*Reminder, error) {
+	session, ok := identity.SessionFromContext(ctx)
+	if !ok {
+		return nil, identity.ErrInvalidSession
+	}
 	const query = `
 		SELECT
 			id,
@@ -67,11 +82,12 @@ func (r *PostgresRepository) ListPending(
 			created_at,
 			updated_at
 		FROM reminders
-		WHERE is_sent = false
+		WHERE is_sent = false AND store_id = $1
+		  AND ($2 = 'owner' OR created_by_user_id = $3)
 		ORDER BY reminder_at ASC
 	`
 
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.db.Query(ctx, query, session.StoreID, session.Role, session.UserID)
 	if err != nil {
 		return nil, err
 	}
@@ -112,6 +128,10 @@ func (r *PostgresRepository) GetNearestByClientID(
 	ctx context.Context,
 	clientID uuid.UUID,
 ) (*Reminder, error) {
+	session, ok := identity.SessionFromContext(ctx)
+	if !ok {
+		return nil, identity.ErrInvalidSession
+	}
 	const query = `
 		SELECT
 			id,
@@ -122,7 +142,8 @@ func (r *PostgresRepository) GetNearestByClientID(
 			created_at,
 			updated_at
 		FROM reminders
-		WHERE client_id = $1
+		WHERE client_id = $1 AND store_id = $2
+		  AND ($3 = 'owner' OR created_by_user_id = $4)
 		ORDER BY reminder_at
 		LIMIT 1
 	`
@@ -133,6 +154,9 @@ func (r *PostgresRepository) GetNearestByClientID(
 		ctx,
 		query,
 		clientID,
+		session.StoreID,
+		session.Role,
+		session.UserID,
 	).Scan(
 		&reminder.ID,
 		&reminder.ClientID,
@@ -158,18 +182,26 @@ func (r *PostgresRepository) MarkSent(
 	ctx context.Context,
 	id uuid.UUID,
 ) error {
+	session, ok := identity.SessionFromContext(ctx)
+	if !ok {
+		return identity.ErrInvalidSession
+	}
 	const query = `
 		UPDATE reminders
 		SET
 			is_sent = true,
 			updated_at = NOW()
-		WHERE id = $1
+		WHERE id = $1 AND store_id = $2
+		  AND ($3 = 'owner' OR created_by_user_id = $4)
 	`
 
 	commandTag, err := r.db.Exec(
 		ctx,
 		query,
 		id,
+		session.StoreID,
+		session.Role,
+		session.UserID,
 	)
 	if err != nil {
 		return err
@@ -215,6 +247,7 @@ func (r *PostgresRepository) ListDetailed(
 				ON c.id = r.client_id
 			INNER JOIN sales s
 				ON s.id = r.sale_id
+			WHERE r.store_id = $1 AND ($2 = 'owner' OR r.created_by_user_id = $3)
 			ORDER BY
 				r.is_sent ASC,
 				r.reminder_at ASC
@@ -241,6 +274,8 @@ func (r *PostgresRepository) ListDetailed(
 				ON s.id = r.sale_id
 			WHERE
 				r.is_sent = false
+				AND r.store_id = $1
+				AND ($2 = 'owner' OR r.created_by_user_id = $3)
 				AND r.reminder_at >= NOW()
 				AND r.reminder_at <= NOW() + INTERVAL '3 days'
 			ORDER BY r.reminder_at ASC
@@ -267,6 +302,8 @@ func (r *PostgresRepository) ListDetailed(
 				ON s.id = r.sale_id
 			WHERE
 				r.is_sent = false
+				AND r.store_id = $1
+				AND ($2 = 'owner' OR r.created_by_user_id = $3)
 				AND r.reminder_at < NOW()
 			ORDER BY r.reminder_at ASC
 		`
@@ -291,6 +328,8 @@ func (r *PostgresRepository) ListDetailed(
 			INNER JOIN sales s
 				ON s.id = r.sale_id
 			WHERE r.is_sent = true
+			  AND r.store_id = $1
+			  AND ($2 = 'owner' OR r.created_by_user_id = $3)
 			ORDER BY r.updated_at DESC
 		`
 
@@ -301,7 +340,11 @@ func (r *PostgresRepository) ListDetailed(
 		)
 	}
 
-	rows, err := r.db.Query(ctx, query)
+	session, ok := identity.SessionFromContext(ctx)
+	if !ok {
+		return nil, identity.ErrInvalidSession
+	}
+	rows, err := r.db.Query(ctx, query, session.StoreID, session.Role, session.UserID)
 	if err != nil {
 		return nil, err
 	}

@@ -3,8 +3,8 @@ package transport
 import (
 	"strconv"
 
-	analyticsapp "github.com/MuhiddinW89/attor/internal/application/analytics"
 	"github.com/MuhiddinW89/attor/internal/analytics"
+	analyticsapp "github.com/MuhiddinW89/attor/internal/application/analytics"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -27,13 +27,13 @@ func (h *AnalyticsHandler) Get(c *fiber.Ctx) error {
 			fiber.StatusBadRequest,
 		).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "invalid analytics filters",
 			},
 		)
 	}
 
 	result, err := h.useCase.Execute(
-		c.Context(),
+		c.UserContext(),
 		filters,
 	)
 
@@ -42,7 +42,7 @@ func (h *AnalyticsHandler) Get(c *fiber.Ctx) error {
 			fiber.StatusInternalServerError,
 		).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			},
 		)
 	}

@@ -37,13 +37,13 @@ func (h *ReminderHandler) List(c *fiber.Ctx) error {
 	}
 
 	result, err := h.listUC.Execute(
-		c.Context(),
+		c.UserContext(),
 		status,
 	)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			},
 		)
 	}
@@ -62,12 +62,12 @@ func (h *ReminderHandler) MarkSent(c *fiber.Ctx) error {
 	}
 
 	if err := h.markSentUC.Execute(
-		c.Context(),
+		c.UserContext(),
 		id,
 	); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			},
 		)
 	}

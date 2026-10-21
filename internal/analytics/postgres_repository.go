@@ -6,16 +6,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MuhiddinW89/attor/internal/identity"
+	"github.com/MuhiddinW89/attor/pkg/database"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresRepository struct {
-	db *pgxpool.Pool
+	db database.Querier
 }
 
 func NewPostgresRepository(
-	db *pgxpool.Pool,
+	db database.Querier,
 ) *PostgresRepository {
 	return &PostgresRepository{
 		db: db,
@@ -53,13 +54,15 @@ func NewPostgresRepository(
 
 func buildSalesFilter(
 	filters Filters,
+	session *identity.Session,
 ) (string, []interface{}) {
 
 	conditions := []string{
-		"1 = 1",
+		"sales.store_id = $1",
+		"($2 = 'owner' OR sales.created_by_user_id = $3)",
 	}
 
-	args := make([]interface{}, 0)
+	args := []interface{}{session.StoreID, session.Role, session.UserID}
 
 	add := func(
 		condition string,
@@ -204,8 +207,12 @@ func (r *PostgresRepository) Get(
 	ctx context.Context,
 	filters Filters,
 ) (*Analytics, error) {
+	session, ok := identity.SessionFromContext(ctx)
+	if !ok {
+		return nil, identity.ErrInvalidSession
+	}
 
-	where, args := buildSalesFilter(filters)
+	where, args := buildSalesFilter(filters, session)
 
 	result := &Analytics{}
 
@@ -435,8 +442,8 @@ func (r *PostgresRepository) Get(
 	customerWhere :=
 		strings.ReplaceAll(
 			where,
-			"sale_date",
-			"s.sale_date",
+			"sales.",
+			"s.",
 		)
 
 	customerQuery := fmt.Sprintf(
@@ -448,7 +455,7 @@ func (r *PostgresRepository) Get(
 			COALESCE(SUM(s.price), 0) AS revenue
 		FROM sales s
 		JOIN clients c
-			ON c.id = s.client_id
+			ON c.id = s.client_id AND c.store_id = s.store_id
 		WHERE %s
 		GROUP BY c.id, c.full_name
 		ORDER BY revenue DESC, sales DESC

@@ -2,6 +2,7 @@ package transport
 
 import (
 	"errors"
+	"strings"
 
 	clientapp "github.com/MuhiddinW89/attor/internal/application/clients"
 	"github.com/MuhiddinW89/attor/internal/clients"
@@ -35,9 +36,21 @@ func (h *ClientHandler) Create(c *fiber.Ctx) error {
 			},
 		)
 	}
+	if !validName(req.FullName, 255) || !validPhone(req.Phone) ||
+		(req.Instagram != nil && runeLength(*req.Instagram) > 255) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid client fields",
+		})
+	}
+	req.FullName = strings.TrimSpace(req.FullName)
+	req.Phone = strings.TrimSpace(req.Phone)
+	if req.Instagram != nil {
+		instagram := strings.TrimSpace(*req.Instagram)
+		req.Instagram = &instagram
+	}
 
 	client, err := h.service.Create(
-		c.Context(),
+		c.UserContext(),
 		clients.CreateClientInput{
 			FullName:  req.FullName,
 			Phone:     req.Phone,
@@ -50,14 +63,14 @@ func (h *ClientHandler) Create(c *fiber.Ctx) error {
 		if errors.Is(err, clients.ErrClientAlreadyExists) {
 			return c.Status(fiber.StatusConflict).JSON(
 				fiber.Map{
-					"error": err.Error(),
+					"error": "client already exists",
 				},
 			)
 		}
 
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			},
 		)
 	}
@@ -75,15 +88,18 @@ func (h *ClientHandler) Create(c *fiber.Ctx) error {
 func (h *ClientHandler) List(c *fiber.Ctx) error {
 
 	search := c.Query("search")
+	if runeLength(search) > 100 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "search is too long"})
+	}
 
 	clientList, err := h.service.List(
-		c.Context(),
+		c.UserContext(),
 		search,
 	)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			},
 		)
 	}
@@ -122,7 +138,7 @@ func (h *ClientHandler) GetByID(c *fiber.Ctx) error {
 	}
 
 	client, err := h.service.GetByID(
-		c.Context(),
+		c.UserContext(),
 		id,
 	)
 
@@ -131,14 +147,14 @@ func (h *ClientHandler) GetByID(c *fiber.Ctx) error {
 		if errors.Is(err, clients.ErrClientNotFound) {
 			return c.Status(fiber.StatusNotFound).JSON(
 				fiber.Map{
-					"error": err.Error(),
+					"error": "client not found",
 				},
 			)
 		}
 
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			},
 		)
 	}
@@ -173,13 +189,13 @@ func (h *ClientHandler) History(c *fiber.Ctx) error {
 	}
 
 	history, err := h.historyUseCase.Execute(
-		c.Context(),
+		c.UserContext(),
 		id,
 	)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			},
 		)
 	}
@@ -190,15 +206,18 @@ func (h *ClientHandler) History(c *fiber.Ctx) error {
 func (h *ClientHandler) Summary(c *fiber.Ctx) error {
 
 	search := c.Query("search")
+	if runeLength(search) > 100 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "search is too long"})
+	}
 
 	clientList, err := h.service.ListWithStats(
-		c.Context(),
+		c.UserContext(),
 		search,
 	)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(
 			fiber.Map{
-				"error": err.Error(),
+				"error": "internal server error",
 			},
 		)
 	}

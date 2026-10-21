@@ -1,6 +1,7 @@
 package transport
 
 type CreateSaleRequest struct {
+	ClientID    string  `json:"client_id"`
 	Phone       string  `json:"phone"`
 	FullName    string  `json:"full_name"`
 	Birthday    string  `json:"birthday"`

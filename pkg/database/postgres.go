@@ -1,4 +1,3 @@
-
 package database
 
 import (
@@ -17,13 +16,18 @@ func NewPostgres(cfg *config.Config) (*pgxpool.Pool, error) {
 	if cfg.DBURL != "" {
 		dsn = cfg.DBURL
 	} else {
+		sslMode := cfg.DBSSLMode
+		if sslMode == "" {
+			sslMode = "require"
+		}
 		dsn = fmt.Sprintf(
-			"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+			"postgres://%s:%s@%s:%s/%s?sslmode=%s",
 			url.QueryEscape(cfg.DBUser),
 			url.QueryEscape(cfg.DBPassword),
 			cfg.DBHost,
 			cfg.DBPort,
 			cfg.DBName,
+			url.QueryEscape(sslMode),
 		)
 	}
 

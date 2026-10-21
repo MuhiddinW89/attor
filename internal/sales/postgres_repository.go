@@ -5,17 +5,18 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/MuhiddinW89/attor/internal/identity"
+	"github.com/MuhiddinW89/attor/pkg/database"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresRepository struct {
-	db *pgxpool.Pool
+	db database.Querier
 }
 
 func NewPostgresRepository(
-	db *pgxpool.Pool,
+	db database.Querier,
 ) *PostgresRepository {
 	return &PostgresRepository{
 		db: db,
@@ -26,10 +27,18 @@ func (r *PostgresRepository) Create(
 	ctx context.Context,
 	sale *Sale,
 ) error {
+	session, ok := identity.SessionFromContext(ctx)
+	if !ok {
+		return identity.ErrInvalidSession
+	}
+	sale.StoreID = session.StoreID
+	sale.CreatedByUserID = session.UserID
 
 	const query = `
 		INSERT INTO sales (
 			id,
+			store_id,
+			created_by_user_id,
 			client_id,
 			perfume_name,
 			volume_ml,
@@ -40,7 +49,7 @@ func (r *PostgresRepository) Create(
 			updated_at
 		)
 		VALUES (
-			$1,$2,$3,$4,$5,$6,$7,$8,$9
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11
 		)
 	`
 
@@ -48,6 +57,8 @@ func (r *PostgresRepository) Create(
 		ctx,
 		query,
 		sale.ID,
+		sale.StoreID,
+		sale.CreatedByUserID,
 		sale.ClientID,
 		sale.PerfumeName,
 		sale.VolumeML,
@@ -65,6 +76,10 @@ func (r *PostgresRepository) GetByID(
 	ctx context.Context,
 	id uuid.UUID,
 ) (*Sale, error) {
+	session, ok := identity.SessionFromContext(ctx)
+	if !ok {
+		return nil, identity.ErrInvalidSession
+	}
 
 	const query = `
 		SELECT
@@ -78,7 +93,8 @@ func (r *PostgresRepository) GetByID(
 			created_at,
 			updated_at
 		FROM sales
-		WHERE id = $1
+		WHERE id = $1 AND store_id = $2
+		  AND ($3 = 'owner' OR created_by_user_id = $4)
 	`
 
 	var sale Sale
@@ -88,6 +104,9 @@ func (r *PostgresRepository) GetByID(
 		ctx,
 		query,
 		id,
+		session.StoreID,
+		session.Role,
+		session.UserID,
 	).Scan(
 		&sale.ID,
 		&sale.ClientID,
@@ -118,6 +137,10 @@ func (r *PostgresRepository) ListByClientID(
 	ctx context.Context,
 	clientID uuid.UUID,
 ) ([]*Sale, error) {
+	session, ok := identity.SessionFromContext(ctx)
+	if !ok {
+		return nil, identity.ErrInvalidSession
+	}
 
 	const query = `
 		SELECT
@@ -131,7 +154,8 @@ func (r *PostgresRepository) ListByClientID(
 			created_at,
 			updated_at
 		FROM sales
-		WHERE client_id = $1
+		WHERE client_id = $1 AND store_id = $2
+		  AND ($3 = 'owner' OR created_by_user_id = $4)
 		ORDER BY sale_date DESC
 	`
 
@@ -139,6 +163,9 @@ func (r *PostgresRepository) ListByClientID(
 		ctx,
 		query,
 		clientID,
+		session.StoreID,
+		session.Role,
+		session.UserID,
 	)
 	if err != nil {
 		return nil, err
