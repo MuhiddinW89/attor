@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/MuhiddinW89/attor/internal/identity"
@@ -12,24 +13,35 @@ import (
 )
 
 func main() {
+	email := strings.TrimSpace(os.Getenv("INITIAL_OWNER_EMAIL"))
+	password := os.Getenv("INITIAL_OWNER_PASSWORD")
+	storeName := strings.TrimSpace(os.Getenv("INITIAL_STORE_NAME"))
+
+	if email == "" || password == "" || storeName == "" {
+		log.Fatal("Missing required variables: INITIAL_OWNER_EMAIL, INITIAL_OWNER_PASSWORD, INITIAL_STORE_NAME")
+	}
+
 	cfg := config.Load()
+
+	if cfg == nil {
+		log.Fatal("Database configuration is missing")
+	}
+
 	pool, err := database.NewPostgres(cfg)
 	if err != nil {
-		log.Fatal("database unavailable")
+		log.Fatalf("Database connection failed: %v", err)
 	}
 	defer pool.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
 	service := identity.NewService(identity.NewPostgresRepository(pool))
-	_, err = service.CreateInitialOwner(
-		ctx,
-		os.Getenv("INITIAL_OWNER_EMAIL"),
-		os.Getenv("INITIAL_OWNER_PASSWORD"),
-		os.Getenv("INITIAL_STORE_NAME"),
-	)
+
+	_, err = service.CreateInitialOwner(ctx, email, password, storeName)
 	if err != nil {
-		log.Fatal("initial owner was not created")
+		log.Fatalf("Initial owner was not created: %v", err)
 	}
-	log.Print("Initial owner created")
+
+	log.Print("Initial owner created successfully")
 }

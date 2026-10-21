@@ -2,3 +2,12 @@ notes.md
 .env
 .env.*
 !.env.example
+.db-target
+
+# Local session cookies and generated binaries
+cookies.txt
+*.exe
+
+# Local Makefile backups
+Makefile.backup
+Makefile.before-db-profiles
